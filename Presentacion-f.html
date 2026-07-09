@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comité Ejecutivo: Estudio de Mercado Día del Padre</title>
+    <!-- Cargamos la librería Chart.js para las gráficas interactivas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #0f172a;
+            --secondary-color: #1e3a8a;
+            --accent-color: #dc2626;
+            --text-color: #334155;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --success-color: #16a34a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white; padding: 2.5rem; text-align: center; border-bottom: 4px solid var(--accent-color);
+        }
+        header h1 { font-size: 2.4rem; font-weight: 800; }
+        header p { opacity: 0.8; margin-top: 0.3rem; font-size: 1.1rem; }
+
+        /* Barra de Navegación de Roles */
+        .roles-nav {
+            display: flex; flex-wrap: wrap; justify-content: center; background: #e2e8f0; padding: 0.6rem; gap: 0.5rem;
+            position: sticky; top: 0; z-index: 50; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .role-btn {
+            background: #cbd5e1; border: none; padding: 0.7rem 1.3rem; font-weight: 600; cursor: pointer;
+            border-radius: 4px; transition: all 0.2s; color: #475569; font-size: 0.9rem;
+        }
+        .role-btn.active, .role-btn:hover {
+            background: var(--secondary-color); color: white; transform: translateY(-2px);
+        }
+
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        .role-section { display: none; background: var(--card-bg); padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .role-section.active { display: block; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { color: var(--secondary-color); margin-bottom: 1.5rem; font-size: 1.8rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: var(--accent-color); color: white; padding: 0.2rem 0.6rem; font-size: 0.8rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Grids para las secciones de Analistas */
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0; }
+        @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+
+        .chart-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1.5rem; }
+        .chart-card h4 { text-align: center; margin-bottom: 1rem; color: var(--primary-color); }
+        .chart-box { height: 260px; display: flex; justify-content: center; position: relative; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.9rem; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #edf2f7; }
+        th { background: var(--primary-color); color: white; }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        .quote { background: #f0fdf4; border-left: 4px solid var(--success-color); padding: 1.2rem; margin: 1.5rem 0; font-style: italic; border-radius: 0 6px 6px 0; }
+        .btn-survey { background: var(--accent-color); color: white; border: none; padding: 1rem 2rem; font-size: 1.1rem; font-weight: bold; border-radius: 50px; cursor: pointer; display: inline-block; margin-top: 1rem; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3); transition: 0.2s; }
+        .btn-survey:hover { background: #b91c1c; transform: scale(1.02); }
+
+        /* Estructura Avanzada del Modal / Encuesta Interactiva por Pasos */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; padding: 1rem; }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: white; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+        .btn-close { background: transparent; border: none; font-size: 2rem; cursor: pointer; color: #94a3b8; }
+        
+        .survey-step { display: none; }
+        .survey-step.active { display: block; animation: fadeIn 0.3s ease; }
+        
+        .step-indicator { display: flex; justify-content: space-between; margin-bottom: 1.5rem; background: #f1f5f9; padding: 0.5rem; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #64748b; }
+        .step-indicator .dot.active { color: var(--secondary-color); }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.95rem; color: var(--primary-color); }
+        select, textarea, input[type="text"] { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 0.95rem; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+        .option-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
+
+        .survey-nav-btns { display: flex; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+        .btn-nav { background: #64748b; color: white; border: none; padding: 0.5rem 1.2rem; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn-nav.next { background: var(--secondary-color); }
+        .btn-nav.submit { background: var(--success-color); }
+
+        footer { background: var(--primary-color); color: white; text-align: center; padding: 1.5rem; margin-top: 4rem; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Corporate Dashboard: Estrategia Comercial 2026</h1>
+        <p>Alineación de Comités y Análisis del Consumidor en Costa Rica</p>
+    </header>
+
+    <!-- NAVEGACIÓN DE ROLES -->
+    <nav class="roles-nav">
+        <button class="role-btn active" onclick="showRole('ceo')">1. Gerente General</button>
+        <button class="role-btn" onclick="showRole('cmo')">2. Jefe Mercadeo / Encuestas</button>
+        <button class="role-btn" onclick="showRole('da')">3. Data Analyst (Métricas)</button>
+        <button class="role-btn" onclick="showRole('bi')">4. BI Analyst (Canales)</button>
+        <button class="role-btn" onclick="showRole('ds')">5. Data Scientist</button>
+        <button class="role-btn" onclick="showRole('coo')">6. Operaciones y Ventas</button>
+    </nav>
+
+    <div class="container">
+        
+        <!-- ROLE 1: GERENTE GENERAL -->
+        <section id="ceo" class="role-section active">
+            <h2><span class="badge">Dirección</span> Reporte del Gerente General (CEO)</h2>
+            <p><strong>Visión Macro Comercial:</strong> Nuestro propósito en esta sesión extraordinaria es unificar las conclusiones de los departamentos analíticos para optimizar nuestras campañas comerciales orientadas al Día del Padre.</p>
+            <div class="quote">"Buscamos la máxima eficiencia en el despliegue de capital. Debemos balancear la solidez transaccional histórica con la creciente demanda omnicanal que experimenta Costa Rica."</div>
+            <h3>Directrices Ejecutivas:</h3>
+            <ul style="margin-left: 1.5rem; margin-top: 0.5rem; line-height: 1.8;">
+                <li>Identificar líneas de producto con tracción real para asignación de presupuesto.</li>
+                <li>Mitigar la fricción en el embudo de ventas digital mediante plataformas de pago ágiles.</li>
+                <li>Garantizar el cumplimiento estricto de los marcos informativos sugeridos por el MEIC.</li>
+            </ul>
+        </section>
+
+        <!-- ROLE 2: JEFE DE MERCADEO / GENERADOR ENCUESTA -->
+        <section id="cmo" class="role-section">
+            <h2><span class="badge">Estrategia Digital</span> Captura de Datos de Campo</h2>
+            <p><strong>Responsable:</strong> Departamento de Investigación y Mercadeo.</p>
+            <p style="margin-bottom: 1rem;">Para validar las hipótesis, diseñamos y distribuimos un cuestionario digital cerrado enfocado en recolectar hábitos, intenciones de inversión y preferencias de marca en las 7 provincias del país.</p>
+            
+            <table>
+                <tr><td><strong>Población Muestreada</strong></td><td>Consumidores ticos activos mayores de 18 años</td></tr>
+                <tr><td><strong>Tamaño de Muestra ($N$)</strong></td><td>100 Personas controladas</td></tr>
+                <tr><td><strong>Segmentos Evaluados</strong></td><td>Perfil Demográfico, Hábitos, Factores de Decisión y Canales</td></tr>
+            </table>
+
+            <div class="quote" style="background: #eff6ff; border-left-color: #3b82f6;">
+                <strong>Interactividad en Vivo:</strong> Ejecute el simulador durante la presentación para demostrar la robustez del formulario que desplegamos a nivel país.
+            </div>
+            <div style="text-align: center;">
+                <button class="btn-survey" onclick="openModal()">📋 Lanzar Formulario de Encuesta Oficial</button>
+            </div>
+        </section>
+
+        <!-- ROLE 3: DATA ANALYST -->
+        <section id="da" class="role-section">
+            <h2><span class="badge">Volumen</span> Análisis de Demanda y Segmentación de Gasto</h2>
+            <p><strong>Aporte del Data Analyst:</strong> Presento los datos consolidados de volumen de artículos preferidos combinados con las métricas estimadas de presupuestos transaccionales.</p>
+            
+            <div class="charts-grid">
+                <!-- Gráfica A: Productos -->
+                <div class="chart-card">
+                    <h4>Distribución de Regalos Más Demandados</h4>
+                    <div class="chart-box"><canvas id="chartRegalosDA"></canvas></div>
+                </div>
+                <!-- Gráfica B: Rangos de Dinero -->
+                <div class="chart-card">
+                    <h4>Distribución del Presupuesto de Compra</h4>
+                    <div class="chart-box"><canvas id="chartPresupuestoDA"></canvas></div>
+                </div>
+            </div>
+            <p><strong>Insight del Analista:</strong> Como se observa, los <strong>Electrónicos (28%)</strong> y la <strong>Ropa (24%)</strong> monopolizan la intención. Al cruzarlo con el presupuesto, vemos que el core del negocio está en el rango de los <strong>₡10.000 a ₡50.000</strong>, concentrando un masivo 73% de los consumidores.</p>
+        </section>
+
+        <!-- ROLE 4: BI ANALYST -->
+        <section id="bi" class="role-section">
+            <h2><span class="badge">Omnicanalidad</span> Inteligencia de Canales y Métodos de Pago</h2>
+            <p><strong>Aporte del BI Analyst:</strong> Traduzco los datos en infraestructura transaccional. Analizamos dónde prefiere comprar el tico y qué herramientas financieras utiliza para cerrar la transacción.</p>
+            
+            <div class="charts-grid">
+                <!-- Gráfica A: Canales de Distribución -->
+                <div class="chart-card">
+                    <h4>Preferencia de Canales de Venta</h4>
+                    <div class="chart-box"><canvas id="chartCanalesBI"></canvas></div>
+                </div>
+                <!-- Gráfica B: Métodos de Pago Relacionados -->
+                <div class="chart-card">
+                    <h4>Uso de Métodos de Pago Predictivos</h4>
+                    <div class="chart-box"><canvas id="chartPagosBI"></canvas></div>
+                </div>
+            </div>
+            <p><strong>Insight de Inteligencia de Negocios:</strong> Aunque el punto físico retiene un 45%, la combinación de comercio electrónico tradicional y social commerce (Instagram, WhatsApp) acumula otro 45%. Monitoreamos que el uso de <strong>Tarjeta y SINPE Móvil</strong> correlaciona directamente con la velocidad de compra digital.</p>
+        </section>
+
+        <!-- ROLE 5: DATA SCIENTIST -->
+        <section id="ds" class="role-section">
+            <h2><span class="badge">Modelado</span> Elasticidad de Compra y Retención</h2>
+            <p><strong>Aporte del Data Scientist:</strong> Evaluamos variables cualitativas como los disparadores que causan el abandono del carrito o cambio de comercio, y qué tan influyente es la seguridad de las garantías.</p>
+            <div class="charts-grid">
+                <div class="chart-card" style="grid-column: span 2;">
+                    <h4>Factores que Provocan el Cambio de Comercio</h4>
+                    <div class="chart-box" style="height: 220px;"><canvas id="chartCambioDS"></canvas></div>
+                </div>
+            </div>
+            <p><strong>Conclusión Científica:</strong> La sensibilidad al **Precio** e **Incentivos/Promociones** actúa como el principal catalizador de cambio. Asimismo, la garantía es reportada como 'Muy Importante' por el modelo estadístico, alineándose perfectamente con las advertencias normativas del MEIC.</p>
+        </section>
+
+        <!-- ROLE 6: DIRECTOR DE OPERACIONES / VENTAS -->
+        <section id="coo" class="role-section">
+            <h2><span class="badge">Acción</span> Implementación Comercial en Puntos de Venta</h2>
+            <p><strong>Estrategia Operativa Final:</strong> Con base en la data expuesta por nuestros analistas e ingenieros, procedemos al despliegue logístico inmediato.</p>
+            <div class="quote" style="background:#fffaf0; border-left-color: #dd6b20;">
+                <strong>Plan de Ejecución Inmediata:</strong><br><br>
+                1. <strong>Estrategia de Stock:</strong> Concentración de inventario electrónico (gadgets, audio) y textil con rangos de precio cerrados entre los ₡15.000 y ₡35.000.<br>
+                2. <strong>Logística de Canales:</strong> Fortalecer canales digitales con opción de respuesta automatizada por WhatsApp y pasarela directa de SINPE Móvil.<br>
+                3. <strong>Conversión de Cierre:</strong> Añadir envoltura de regalo premium gratis para capturar al comprador rezagado o de última hora, reforzando la presentación comercial.
+            </div>
+        </section>
+    </div>
+
+    <!-- VENTANA EMERGENTE:-->
+    <div class="modal" id="surveyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cuestionario de Estudio Nacional</h3>
+                <button class="btn-close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <form id="fullInteractiveForm" onsubmit="processSurvey(event)">
+                
+                <!-- PASO 1: DEMOGRÁFICO -->
+                <div class="survey-step active" id="step1">
+                    <div class="step-indicator"><span class="dot active">PASO 1: Demografía</span><span>Paso 2</span><span>Paso 3</span></div>
+                    <div class="form-group">
+                        <label>¿Cuál es su rango de edad?</label>
+                        <select id="surveyEdad" required>
+                            <option>18 a 25 años</option><option>26 a 35 años</option>
+                            <option>36 a 45 años</option><option>46 a 55 años</option><option>Más de 55 años</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿En qué provincia vive?</label>
+                        <select required>
+                            <option>San José</option><option>Alajuela</option><option>Cartago</option>
+                            <option>Heredia</option><option>Guanacaste</option><option>Puntarenas</option><option>Limón</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Sexo</label>
+                        <div class="options-grid">
+                            <label class="option-item"><input type="radio" name="s_sex" checked> Masculino</label>
+                            <label class="option-item"><input type="radio" name="s_sex"> Femenino</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: HÁBITOS Y PREFERENCIAS -->
+                <div class="survey-step" id="step2">
+                    <div class="step-indicator"><span>Paso 1</span><span class="dot active">PASO 2: Hábitos y Regalo</span><span>Paso 3</span></div>
+                    <div class="form-group">
+                        <label>¿Qué regalo compraría / considera el mejor?</label>
+                        <select id="surveyRegaloSelection">
+                            <option value="0">Electrónicos</option>
+                            <option value="1">Ropa</option>
+                            <option value="2">Perfumes</option>
+                            <option value="3">Herramientas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Cuánto dinero piensa invertir?</label>
+                        <select id="surveyPresupuestoSelection">
+                            <option value="0">Menos de ₡10.000</option>
+                            <option value="1">₡10.000 a ₡25.000</option>
+                            <option value="2">₡25.000 a ₡50.000</option>
+                            <option value="3">Más de ₡50.000</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Para quién compra el regalo?</label>
+                        <select>
+                            <option>Padre</option><option>Abuelo</option><option>Esposo</option><option>Otro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- PASO 3: CANALES Y DECISIÓN -->
+                <div class="survey-step" id="step3">
+                    <div class="step-indicator"><span>Paso 1</span><span>Paso 2</span><span class="dot active">PASO 3: Canales e Insights</span></div>
+                    <div class="form-group">
+                        <label>¿Dónde prefiere comprar el regalo?</label>
+                        <select id="surveyCanalSelection">
+                            <option value="0">Tienda física</option>
+                            <option value="1">Tienda en línea</option>
+                            <option value="2">Redes sociales</option>
+                            <option value="3">Emprendimientos locales</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Qué factor influye más en su compra?</label>
+                        <select>
+                            <option>Precio</option><option>Calidad</option><option>Utilidad</option><option>Promociones</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Qué le gustaría que las tiendas ofrecieran?</label>
+                        <textarea rows="2" placeholder="Ej: Descuentos directos, SINPE libre..."></textarea>
+                    </div>
+                </div>
+
+                <!-- BOTONES DE CONTROL DE LA ENCUESTA -->
+                <div class="survey-nav-btns">
+                    <button type="button" class="btn-nav" id="btnBack" onclick="changeStep(-1)" style="visibility: hidden;">Atrás</button>
+                    <button type="button" class="btn-nav next" id="btnNext" onclick="changeStep(1)">Siguiente</button>
+                    <button type="submit" class="btn-nav submit" id="btnSubmit" style="display: none;">Enviar Encuesta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Lógica de control de pestañas superiores (Roles)
+        function showRole(roleId) {
+            document.querySelectorAll('.role-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(roleId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Lógica del Cuestionario Modular por Pasos
+        let currentStep = 1;
+        function openModal() { document.getElementById('surveyModal').classList.add('active'); resetSurveyForm(); }
+        function closeModal() { document.getElementById('surveyModal').classList.remove('active'); }
+        
+        function resetSurveyForm() {
+            currentStep = 1;
+            showStep(currentStep);
+            document.getElementById("fullInteractiveForm").reset();
+        }
+
+        function changeStep(direction) {
+            currentStep += direction;
+            showStep(currentStep);
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.survey-step').forEach((s, idx) => {
+                s.classList.toggle('active', (idx + 1) === step);
+            });
+            
+            document.getElementById('btnBack').style.visibility = (step === 1) ? 'hidden' : 'visible';
+            if (step === 3) {
+                document.getElementById('btnNext').style.display = 'none';
+                document.getElementById('btnSubmit').style.display = 'block';
+            } else {
+                document.getElementById('btnNext').style.display = 'block';
+                document.getElementById('btnSubmit').style.display = 'none';
+            }
+        }
+
+        // --- GRÁFICAS EXPANDIDAS ---
+        
+        // DATA ANALYST CHARTS
+        const ctxRegalosDA = document.getElementById('chartRegalosDA').getContext('2d');
+        const chartRegalosDA = new Chart(ctxRegalosDA, {
+            type: 'bar',
+            data: {
+                labels: ['Electrónicos', 'Ropa', 'Perfumes', 'Herramientas', 'Calzado', 'Relojes'],
+                datasets: [{ label: '% Demanda', data: [28, 24, 15, 12, 8, 5], backgroundColor: '#1e3a8a' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        const ctxPresupuestoDA = document.getElementById('chartPresupuestoDA').getContext('2d');
+        const chartPresupuestoDA = new Chart(ctxPresupuestoDA, {
+            type: 'pie',
+            data: {
+                labels: ['< ₡10k', '₡10k - ₡25k', '₡25k - ₡50k', '> ₡50k'],
+                datasets: [{ data: [10, 38, 35, 17], backgroundColor: ['#94a3b8', '#3b82f6', '#1d4ed8', '#1e3a8a'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // BI ANALYST CHARTS
+        const ctxCanalesBI = document.getElementById('chartCanalesBI').getContext('2d');
+        const chartCanalesBI = new Chart(ctxCanalesBI, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tienda Física', 'Tienda Online', 'Redes Sociales', 'Locales'],
+                datasets: [{ data: [45, 30, 15, 10], backgroundColor: ['#0f172a', '#2563eb', '#60a5fa', '#cbd5e1'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const ctxPagosBI = document.getElementById('chartPagosBI').getContext('2d');
+        new Chart(ctxPagosBI, {
+            type: 'polarArea',
+            data: {
+                labels: ['Tarjeta', 'SINPE Móvil', 'Efectivo', 'Transferencia'],
+                datasets: [{ data: [40, 35, 15, 10], backgroundColor: ['rgba(30, 58, 138, 0.8)', 'rgba(37, 99, 235, 0.8)', 'rgba(148, 163, 184, 0.8)', 'rgba(15, 23, 42, 0.8)'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        // DATA SCIENTIST CHART
+        const ctxCambioDS = document.getElementById('chartCambioDS').getContext('2d');
+        new Chart(ctxCambioDS, {
+            type: 'bar',
+            data: {
+                labels: ['Mejor Precio', 'Mejor Calidad', 'Atención Cliente', 'Promociones', 'Variedad'],
+                datasets: [{ label: 'Índice de Influencia', data: [45, 25, 15, 10, 5], backgroundColor: '#dc2626' }]
+            },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        function processSurvey(event) {
+            event.preventDefault();
+            alert("¡Encuesta Procesada Core de Negocios!\n\nLos analistas de datos verán el incremento reflejado de forma automatizada.");
+            
+            // Capturamos las selecciones del usuario para alterar en tiempo real las gráficas de DA y BI
+            const regaloIndex = document.getElementById('surveyRegaloSelection').value;
+            const presupuestoIndex = document.getElementById('surveyPresupuestoSelection').value;
+            const canalIndex = document.getElementById('surveyCanalSelection').value;
+
+            // Modificamos dinámicamente los datasets de los analistas correspondientes
+            chartRegalosDA.data.datasets[0].data[regaloIndex] += 2;
+            chartRegalosDA.update();
+
+            chartPresupuestoDA.data.datasets[0].data[presupuestoIndex] += 2;
+            chartPresupuestoDA.update();
+
+            chartCanalesBI.data.datasets[0].data[canalIndex] += 2;
+            chartCanalesBI.update();
+
+            closeModal();
+        }
+    </script>
+</body>
+</html>
